@@ -37,7 +37,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "cap:copy": "cap copy android",
+    "cap:sync": "cap sync android",
+    "android:build": "cap copy android && cd android && .\\gradlew.bat assembleDebug"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
