@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { Sidebar } from "@/components/layout/sidebar";
@@ -10,20 +10,36 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { AccountAccessAlert } from "@/components/layout/account-access-alert";
 import { PresenceHeartbeat } from "@/components/presence/presence-heartbeat";
 import { BrowserNotificationsListener } from "@/components/notifications/browser-notifications-listener";
+import { cn } from "@/lib/utils";
 
 // Auth-gated dashboard shell. Extracted from the layout so the layout
 // itself can stay a server component and export metadata (noindex) —
 // client components can't export Next's metadata object.
 
+function DynamicHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isChatOpen = pathname.startsWith("/inbox") && !!searchParams.get("c");
+
+  return (
+    <div className={cn(isChatOpen && "hidden lg:block")}>
+      <Header onOpenSidebar={onOpenSidebar} />
+    </div>
+  );
+}
+
 function DashboardShellInner({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const t = useTranslations("DashboardShell");
 
   // Sidebar drawer state — only used on mobile. On lg+ the sidebar is
   // always visible and this stays at `false` (ignored by the component).
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+
+  const isInbox = pathname?.startsWith("/inbox");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -33,7 +49,7 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex h-[100dvh] items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           <p className="text-sm text-muted-foreground">{t("loading")}</p>
@@ -45,7 +61,7 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-full h-[100dvh] overflow-hidden bg-background">
       {/* Reports this tab's online/away presence once we know a user is
           signed in. Headless — renders nothing. */}
       <PresenceHeartbeat />
@@ -53,10 +69,19 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
           Your profile). Headless — renders nothing. */}
       <BrowserNotificationsListener />
       <Sidebar open={sidebarOpen} onClose={closeSidebar} />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Header onOpenSidebar={() => setSidebarOpen(true)} />
-        {/* Thinner horizontal padding on mobile so cards have room to breathe, pb-20 on mobile for bottom bar. */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-20 lg:pb-6">
+      <div className="flex flex-1 flex-col overflow-hidden h-full">
+        <Suspense fallback={<Header onOpenSidebar={() => setSidebarOpen(true)} />}>
+          <DynamicHeader onOpenSidebar={() => setSidebarOpen(true)} />
+        </Suspense>
+        {/* For inbox, let it take 100% height and manage its own scrolling without outer padding or page bounce */}
+        <main
+          className={cn(
+            "flex-1 min-h-0",
+            isInbox
+              ? "p-0 pb-0 overflow-hidden flex flex-col h-full overscroll-none"
+              : "overflow-y-auto p-4 sm:p-6 pb-20 lg:pb-6"
+          )}
+        >
           {/* Above every page: writes are being rejected and here's why.
               Renders nothing unless the account/role failed to resolve. */}
           <AccountAccessAlert />
