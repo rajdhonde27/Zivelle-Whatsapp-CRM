@@ -75,7 +75,7 @@ export function MobileNav() {
     <>
       <nav
         aria-label="Mobile Navigation"
-        className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/95 backdrop-blur-md lg:hidden pb-[env(safe-area-inset-bottom)]"
+        className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/95 backdrop-blur-md lg:hidden pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]"
       >
         <div className="flex h-15 items-center justify-around px-2">
           {navItems.map((item) => {

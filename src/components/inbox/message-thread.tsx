@@ -460,13 +460,31 @@ export function MessageThread({
       });
   }, [conversationId, hasUnread]);
 
-  // Auto-scroll to bottom on new messages
+  const lastConversationIdRef = useRef<string | null>(null);
+  const prevMessagesCountRef = useRef(0);
+  const isNearBottomRef = useRef(true);
+
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    // Consider user near bottom if within 150px of bottom
+    isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < 150;
+  }, []);
+
+  // Auto-scroll to bottom on conversation switch, or when new messages arrive while user is already at the bottom
   useEffect(() => {
     if (scrollRef.current) {
       const el = scrollRef.current;
-      el.scrollTop = el.scrollHeight;
+      const isNewConv = conversationId !== lastConversationIdRef.current;
+      const hasMoreMessages = messages.length > prevMessagesCountRef.current;
+
+      if (isNewConv || (hasMoreMessages && isNearBottomRef.current)) {
+        el.scrollTop = el.scrollHeight;
+      }
     }
-  }, [messages]);
+    lastConversationIdRef.current = conversationId ?? null;
+    prevMessagesCountRef.current = messages.length;
+  }, [messages, conversationId]);
 
   const handleSend = useCallback(
     async (text: string, replyToId?: string) => {
@@ -905,7 +923,7 @@ export function MessageThread({
     // clipped and the hover toolbar overlaps the Tags panel. Letting the
     // root shrink lets the bubbles' break-words / max-w caps apply.
     // Issue #257.
-    <div className={cn("flex min-w-0 flex-1 flex-col h-full overflow-hidden overscroll-none", DOODLE_BG_CLASSES)}>
+    <div className={cn("flex min-w-0 min-h-0 flex-1 flex-col h-full overflow-hidden overscroll-none", DOODLE_BG_CLASSES)}>
       {/* Header — solid card surface sits on top of the doodle so the
           name/avatar/dropdowns stay legible. */}
       <div className="flex items-center justify-between gap-2 border-b border-border bg-card px-3 py-3 sm:px-4">
@@ -1107,7 +1125,11 @@ export function MessageThread({
       </div>
 
       {/* Messages Area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 sm:px-4 sm:py-4 [touch-action:pan-y] [-webkit-overflow-scrolling:touch]"
+      >
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
