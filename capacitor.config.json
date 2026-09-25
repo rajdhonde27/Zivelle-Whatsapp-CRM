@@ -1,0 +1,29 @@
+{
+  "appId": "com.wacrm.mobile",
+  "appName": "WA CRM",
+  "webDir": "public",
+  "server": {
+    "url": "https://3a13-219-91-133-40.ngrok-free.app",
+    "cleartext": true,
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "Keyboard": {
+      "resize": "body",
+      "style": "dark",
+      "resizeOnFullScreen": true
+    },
+    "StatusBar": {
+      "style": "dark",
+      "backgroundColor": "#020617"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "backgroundColor": "#020617",
+      "showSpinner": false
+    }
+  }
+}
